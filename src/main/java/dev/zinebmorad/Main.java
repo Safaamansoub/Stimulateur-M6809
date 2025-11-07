@@ -102,27 +102,30 @@ public class Main {
         cpu.verifyResults(cpu);
 
 //TEST le 07/11/25 this test making in order to sheck 8-bit Load & Store that working 
-        public static void main(string[] args){
-            testLoadStore();
-        }
-        public static void testLoadStore(){
-            RAM ram= new RAM();
-            CPU cpu= new CPU(ram);
+       public static void main(String[] args) {
+        testLoadStore();
+    }
+
+    public static void testLoadStore() {
+        RAM ram = new RAM();
+        CPU cpu = new CPU(ram);
+
         /* Programme en mémoire :
          C000: LDA #$55
          C002: STA $0100
          C005: LDB #$AA
          C007: STB $0101
-         C00A: JMP $C00A (loop) */
-             int[] program = {
+         C00A: JMP $C00A (loop)
+        */
+        int[] program = {
             0x86, 0x55,        // LDA #$55
             0xB7, 0x01, 0x00,  // STA $0100
             0xC6, 0xAA,        // LDB #$AA
             0xF7, 0x01, 0x01,  // STB $0101
             0x7E, 0xC0, 0x0A   // JMP $C00A
         };
-            
-  // Charger le programme en mémoire à partir de l’adresse 0xC000
+
+        // Charger le programme en mémoire à partir de l’adresse 0xC000
         for (int i = 0; i < program.length; i++) {
             ram.WriteInMemory(0xC000 + i, program[i]);
         }
@@ -141,6 +144,5 @@ public class Main {
         // Vérifier le contenu mémoire
         System.out.printf("Memory[0100]=%02X  Memory[0101]=%02X\n",
             ram.ReadFromMemory(0x0100), ram.ReadFromMemory(0x0101));
-
     }
 }
