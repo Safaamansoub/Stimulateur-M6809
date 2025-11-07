@@ -100,20 +100,14 @@ public class Main {
         // 7. Verify the results
         System.out.println("\n--- TEST VERIFICATION ---");
         cpu.verifyResults(cpu);
-<<<<<<< HEAD
+
 
 
         // hiii safaa cvvv 
 
 
 
-
-
-
-
-
-=======
->>>>>>> 82447db56e6d7a21db475dcbd546366effdad49d
+        
     }
 }
 
