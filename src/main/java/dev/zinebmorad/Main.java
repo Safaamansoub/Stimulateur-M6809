@@ -100,5 +100,6 @@ public class Main {
         // 7. Verify the results
         System.out.println("\n--- TEST VERIFICATION ---");
         cpu.verifyResults(cpu);
-
+    }
+}
 
