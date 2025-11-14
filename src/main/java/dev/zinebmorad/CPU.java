@@ -133,10 +133,6 @@ public class CPU {
          return (DP << 8) | offset ;
     }
     // for the others were gonna created them whem we need
-
-
-
-
     //for D (A+B)
     private int getD(){
         return ((A & 0xFF) << 8) | (B & 0xFF);
@@ -165,9 +161,101 @@ public class CPU {
         clearFlag(V_FLAG);
     }
 
+    // 8 bits LOAD ANS STORE
+    private void updateZNFlags8(int value) {
+        int v = value & 0xFF;
+        if (v == 0) setFlag(Z_FLAG);
+        else clearFlag(Z_FLAG);
+        if ((v & 0x80) != 0) setFlag(N_FLAG);
+        else clearFlag(N_FLAG);
+        clearFlag(V_FLAG);
+    }
+
+    // ========== LDA ==========
+    private void LDA_IMM() { // Immediate
+        A = fetchByte() & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    private void LDA_DIR() { // Direct
+        int ea = getDirectAdress();
+        A = ram.ReadFromMemory(ea) & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    private void LDA_EXT() { // Extended
+        int ea = getExtendAdress();
+        A = ram.ReadFromMemory(ea) & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    private void LDA_IND() {
+        int addr = getIndexedAddress();
+        A = ram.ReadFromMemory(addr);
+        updateZNFlags8(A);
+    }
+
+    private void LDB_IMM() {
+        B = fetchByte() & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    private void LDB_DIR() {
+        int ea = getDirectAdress();
+        B = ram.ReadFromMemory(ea) & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    private void LDB_EXT() {
+        int ea = getExtendAdress();
+        B = ram.ReadFromMemory(ea) & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    private void LDB_IND() {
+        int addr = getIndexedAddress();
+        B = ram.ReadFromMemory(addr);
+        updateZNFlags8(B);
+    }
+
+    // ========== STA ==========
+    private void STA_DIR() {
+        int ea = getDirectAdress();
+        ram.WriteInMemory(ea, A & 0xFF);
+    }
+
+    private void STA_EXT() {
+        int ea = getExtendAdress();
+        ram.WriteInMemory(ea, A & 0xFF);
+    }
+
+    private void STA_IND() {
+        int addr = getIndexedAddress();
+        ram.WriteInMemory(addr, A);
+    }
+
+    // ========== STB ==========
+    private void STB_DIR() {
+        int ea = getDirectAdress();
+        ram.WriteInMemory(ea, B & 0xFF);
+    }
+
+    private void STB_EXT() {
+        int ea = getExtendAdress();
+        ram.WriteInMemory(ea, B & 0xFF);
+    }
+
+    private void STB_IND() {
+        int addr = getIndexedAddress();
+        ram.WriteInMemory(addr, B);
+
+    }
+
+
+
+
+
     // 16-Bit LOAD AND STORE INSTRUCTIONSS
-
-
     //LDD
     // LDD IMEDIATE opcode (0xCC)
     private void ldd_immediate(){
@@ -212,8 +300,6 @@ public class CPU {
         int ea = getIndexedAddress();
         ram.WriteWord(ea, getD());
     }
-
-
     //LDX
     private void ldx_immediate(){
         X = fetchWord();
@@ -247,7 +333,6 @@ public class CPU {
         int ea = getIndexedAddress();
         ram.WriteWord(ea, X);
     }
-
     // LDY
     private void ldy_immediate(){
         Y = fetchWord() ;
@@ -354,6 +439,506 @@ public class CPU {
         int ea = getIndexedAddress();
         ram.WriteWord(ea, S);
     }
+
+
+
+
+
+
+
+
+
+    // ===============================
+    // 8-BIT ARITHMETIC INSTRUCTIONS
+    // ===============================
+    private void updateAddFlags8(int op1, int op2, int result) {
+        int r = result & 0xFF;
+        if (((op1 ^ op2 ^ r) & 0x10) != 0) setFlag(H_FLAG);
+        else clearFlag(H_FLAG);
+        if (result > 0xFF) setFlag(C_FLAG);
+        else clearFlag(C_FLAG);
+        if (((op1 ^ result) & (op2 ^ result) & 0x80) != 0) setFlag(V_FLAG);
+        else clearFlag(V_FLAG);
+        if ((r & 0x80) != 0) setFlag(N_FLAG);
+        else clearFlag(N_FLAG);
+        if (r == 0) setFlag(Z_FLAG);
+        else clearFlag(Z_FLAG);
+    }
+
+    private void updateSubFlags8(int op1, int op2, int result) {
+        int r = result & 0xFF;
+        if (result < 0) setFlag(C_FLAG);
+        else clearFlag(C_FLAG);
+        if (((op1 ^ op2) & (op1 ^ result) & 0x80) != 0) setFlag(V_FLAG);
+        else clearFlag(V_FLAG);
+        if ((r & 0x80) != 0) setFlag(N_FLAG);
+        else clearFlag(N_FLAG);
+        if (r == 0) setFlag(Z_FLAG);
+        else clearFlag(Z_FLAG);
+    }
+
+    // --- ADDA Immediate ---
+    private void ADDA_IMM() {
+        int op1 = A;
+        int op2 = fetchByte();
+        int result = op1 + op2;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+
+    // --- ADDA Direct ---
+    private void ADDA_DIR() {
+        int addr = getDirectAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+
+    // --- ADDA Extended ---
+    private void ADDA_EXT() {
+        int addr = getExtendAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+    private void ADDA_IND() {
+        int addr = getIndexedAddress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+    private void ADDB_IMM() {
+        int op1 = B;
+        int op2 = fetchByte();
+        int result = op1 + op2;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+
+    private void ADDB_DIR() {
+        int addr = getDirectAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+
+    private void ADDB_EXT() {
+        int addr = getExtendAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+
+    private void ADDB_IND() {
+        int addr = getIndexedAddress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 + op2;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2, result);
+    }
+    private void ADCA_IMM() {
+        int op1 = A;
+        int op2 = fetchByte();
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    private void ADCA_DIR() {
+        int addr = getDirectAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    private void ADCA_EXT() {
+        int addr = getExtendAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    private void ADCA_IND() {
+        int addr = getIndexedAddress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        A = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    // IMM
+    private void ADCB_IMM() {
+        int op1 = B;
+        int op2 = fetchByte();
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    // DIR
+    private void ADCB_DIR() {
+        int addr = getDirectAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    // EXT
+    private void ADCB_EXT() {
+        int addr = getExtendAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    // IND
+    private void ADCB_IND() {
+        int addr = getIndexedAddress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 + op2 + carry;
+        B = result & 0xFF;
+        updateAddFlags8(op1, op2 + carry, result);
+    }
+
+    // Immediate
+    private void SUBA_IMM() {
+        int op1 = A;
+        int op2 = fetchByte();
+        int result = op1 - op2;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // Direct
+    private void SUBA_DIR() {
+        int addr = getDirectAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // Extended
+    private void SUBA_EXT() {
+        int addr = getExtendAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // Indexed
+    private void SUBA_IND() {
+        int addr = getIndexedAddress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    private void SUBB_IMM() {
+        int op1 = B;
+        int op2 = fetchByte();
+        int result = op1 - op2;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    private void SUBB_DIR() {
+        int addr = getDirectAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    private void SUBB_EXT() {
+        int addr = getExtendAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    private void SUBB_IND() {
+        int addr = getIndexedAddress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // IMM
+    private void SBCA_IMM() {
+        int op1 = A;
+        int op2 = fetchByte();
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // DIR
+    private void SBCA_DIR() {
+        int addr = getDirectAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // EXT
+    private void SBCA_EXT() {
+        int addr = getExtendAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // IND
+    private void SBCA_IND() {
+        int addr = getIndexedAddress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        A = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // IMM
+    private void SBCB_IMM() {
+        int op1 = B;
+        int op2 = fetchByte();
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // DIR
+    private void SBCB_DIR() {
+        int addr = getDirectAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // EXT
+    private void SBCB_EXT() {
+        int addr = getExtendAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // IND
+    private void SBCB_IND() {
+        int addr = getIndexedAddress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int carry = isFlagSet(C_FLAG) ? 1 : 0;
+        int result = op1 - op2 - carry;
+        B = result & 0xFF;
+        updateSubFlags8(op1, op2 + carry, result);
+    }
+
+    // IMM
+    private void CMPA_IMM() {
+        int op1 = A;
+        int op2 = fetchByte();
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // DIR
+    private void CMPA_DIR() {
+        int addr = getDirectAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // EXT
+    private void CMPA_EXT() {
+        int addr = getExtendAdress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // IND
+    private void CMPA_IND() {
+        int addr = getIndexedAddress();
+        int op1 = A;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // IMM
+    private void CMPB_IMM() {
+        int op1 = B;
+        int op2 = fetchByte();
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // DIR
+    private void CMPB_DIR() {
+        int addr = getDirectAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // EXT
+    private void CMPB_EXT() {
+        int addr = getExtendAdress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // IND
+    private void CMPB_IND() {
+        int addr = getIndexedAddress();
+        int op1 = B;
+        int op2 = ram.ReadFromMemory(addr);
+        int result = op1 - op2;
+        updateSubFlags8(op1, op2, result);
+    }
+
+    // INCA : incrément A
+    private void INCA() {
+        int before = A & 0xFF;
+        int after = (before + 1) & 0xFF;
+        A = after;
+        if (after == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if ((after & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (before == 0x7F) setFlag(V_FLAG); else clearFlag(V_FLAG);
+    }
+
+    // INCB : incrément B
+    private void INCB() {
+        int before = B & 0xFF;
+        int after = (before + 1) & 0xFF;
+        B = after;
+        if (after == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if ((after & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (before == 0x7F) setFlag(V_FLAG); else clearFlag(V_FLAG);
+    }
+
+    // DECA : décrément A
+    private void DECA() {
+        int before = A & 0xFF;
+        int after = (before - 1) & 0xFF;
+        A = after;
+        if (after == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if ((after & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (before == 0x80) setFlag(V_FLAG); else clearFlag(V_FLAG);
+    }
+
+    // DECB : décrément B
+    private void DECB() {
+        int before = B & 0xFF;
+        int after = (before - 1) & 0xFF;
+        B = after;
+        if (after == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if ((after & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (before == 0x80) setFlag(V_FLAG); else clearFlag(V_FLAG);
+    }
+
+    // CLRA : clear A
+    private void CLRA() {
+        A = 0;
+        setFlag(Z_FLAG);
+        clearFlag(N_FLAG);
+        clearFlag(V_FLAG);
+        clearFlag(C_FLAG);
+    }
+
+    // CLRB : clear B
+    private void CLRB() {
+        B = 0;
+        setFlag(Z_FLAG);
+        clearFlag(N_FLAG);
+        clearFlag(V_FLAG);
+        clearFlag(C_FLAG);
+    }
+
+    // TSTA : test A
+    private void TSTA() {
+        if ((A & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (A == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        clearFlag(V_FLAG);
+    }
+
+    // TSTB : test B
+    private void TSTB() {
+        if ((B & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (B == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        clearFlag(V_FLAG);
+    }
+
+
+
+
+
+
+
+
+
 
     // 16-Bit Arithmetic
     private void updateAddFlags16(int operand1, int operand2, int fullResult) {
@@ -963,6 +1548,308 @@ public class CPU {
 
 
 
+
+
+    // Logic and Shift
+    // ANDA
+// IMM
+    private void ANDA_IMM() {
+        A = (A & fetchByte()) & 0xFF;
+        updateZNFlags8(A);
+    }
+    // DIR
+    private void ANDA_DIR() {
+        int addr = getDirectAdress();
+        A = (A & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    // EXT
+    private void ANDA_EXT() {
+        int addr = getExtendAdress();
+        A = (A & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    // IND
+    private void ANDA_IND() {
+        int addr = getIndexedAddress();
+        A = (A & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    // ANDB
+// IMM
+    private void ANDB_IMM() {
+        B = (B & fetchByte()) & 0xFF;
+        updateZNFlags8(B);
+    }
+    // DIR
+    private void ANDB_DIR() {
+        int addr = getDirectAdress();
+        B = (B & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    // EXT
+    private void ANDB_EXT() {
+        int addr = getExtendAdress();
+        B = (B & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    // IND
+    private void ANDB_IND() {
+        int addr = getIndexedAddress();
+        B = (B & ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    // ORA
+    private void ORA_IMM() {
+        A = (A | fetchByte()) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void ORA_DIR() {
+        int addr = getDirectAdress();
+        A = (A | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void ORA_EXT() {
+        int addr = getExtendAdress();
+        A = (A | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void ORA_IND() {
+        int addr = getIndexedAddress();
+        A = (A | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    // ORB
+    private void ORB_IMM() {
+        B = (B | fetchByte()) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void ORB_DIR() {
+        int addr = getDirectAdress();
+        B = (B | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void ORB_EXT() {
+        int addr = getExtendAdress();
+        B = (B | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void ORB_IND() {
+        int addr = getIndexedAddress();
+        B = (B | ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    // EORA
+    private void EORA_IMM() {
+        A = (A ^ fetchByte()) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void EORA_DIR() {
+        int addr = getDirectAdress();
+        A = (A ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void EORA_EXT() {
+        int addr = getExtendAdress();
+        A = (A ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+    private void EORA_IND() {
+        int addr = getIndexedAddress();
+        A = (A ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(A);
+    }
+
+    // EORB
+    private void EORB_IMM() {
+        B = (B ^ fetchByte()) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void EORB_DIR() {
+        int addr = getDirectAdress();
+        B = (B ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void EORB_EXT() {
+        int addr = getExtendAdress();
+        B = (B ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+    private void EORB_IND() {
+        int addr = getIndexedAddress();
+        B = (B ^ ram.ReadFromMemory(addr)) & 0xFF;
+        updateZNFlags8(B);
+    }
+
+    // BITA
+    private void BITA_IMM() {
+        int result = A & fetchByte();
+        updateZNFlags8(result);
+    }
+    private void BITA_DIR() {
+        int addr = getDirectAdress();
+        int result = A & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+    private void BITA_EXT() {
+        int addr = getExtendAdress();
+        int result = A & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+    private void BITA_IND() {
+        int addr = getIndexedAddress();
+        int result = A & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+
+    // BITB
+    private void BITB_IMM() {
+        int result = B & fetchByte();
+        updateZNFlags8(result);
+    }
+    private void BITB_DIR() {
+        int addr = getDirectAdress();
+        int result = B & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+    private void BITB_EXT() {
+        int addr = getExtendAdress();
+        int result = B & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+    private void BITB_IND() {
+        int addr = getIndexedAddress();
+        int result = B & ram.ReadFromMemory(addr);
+        updateZNFlags8(result);
+    }
+
+    private void COMA() {
+        A = (~A) & 0xFF;
+        setFlag(C_FLAG);
+        updateZNFlags8(A);
+    }
+    private void COMB() {
+        B = (~B) & 0xFF;
+        setFlag(C_FLAG);
+        updateZNFlags8(B);
+    }
+
+    private void NEGA() {
+        int orig = A & 0xFF;
+        int result = (0 - orig) & 0xFF;
+        A = result;
+        if (result == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if (orig == 0x80) setFlag(V_FLAG); else clearFlag(V_FLAG);
+        if ((result & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (orig != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+    }
+    private void NEGB() {
+        int orig = B & 0xFF;
+        int result = (0 - orig) & 0xFF;
+        B = result;
+        if (result == 0) setFlag(Z_FLAG); else clearFlag(Z_FLAG);
+        if (orig == 0x80) setFlag(V_FLAG); else clearFlag(V_FLAG);
+        if ((result & 0x80) != 0) setFlag(N_FLAG); else clearFlag(N_FLAG);
+        if (orig != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+    }
+
+    private void ASLA() {
+        int old = A & 0xFF;
+        A = (old << 1) & 0xFF;
+        if ((old & 0x80) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        if (((A ^ old) & 0x80) != 0) setFlag(V_FLAG); else clearFlag(V_FLAG);
+        updateZNFlags8(A);
+    }
+    private void ASLB() {
+        int old = B & 0xFF;
+        B = (old << 1) & 0xFF;
+        if ((old & 0x80) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        if (((B ^ old) & 0x80) != 0) setFlag(V_FLAG); else clearFlag(V_FLAG);
+        updateZNFlags8(B);
+    }
+
+    private void ASRA() {
+        int old = A & 0xFF;
+        int msb = old & 0x80;
+        if ((old & 0x01) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        A = ((old >> 1) | msb) & 0xFF;
+        clearFlag(V_FLAG);
+        updateZNFlags8(A);
+    }
+    private void ASRB() {
+        int old = B & 0xFF;
+        int msb = old & 0x80;
+        if ((old & 0x01) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        B = ((old >> 1) | msb) & 0xFF;
+        clearFlag(V_FLAG);
+        updateZNFlags8(B);
+    }
+
+    private void LSRA() {
+        int old = A & 0xFF;
+        if ((old & 0x01) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        A = (old >> 1) & 0x7F; // bit 7 becomes 0
+        clearFlag(V_FLAG);
+        updateZNFlags8(A);
+    }
+    private void LSRB() {
+        int old = B & 0xFF;
+        if ((old & 0x01) != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        B = (old >> 1) & 0x7F;
+        clearFlag(V_FLAG);
+        updateZNFlags8(B);
+    }
+
+    private void ROLA() {
+        int carryIn = isFlagSet(C_FLAG) ? 1 : 0;
+        int newCarry = (A & 0x80) != 0 ? 1 : 0;
+        A = ((A << 1) | carryIn) & 0xFF;
+        if (newCarry == 1) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        clearFlag(V_FLAG);
+        updateZNFlags8(A);
+    }
+    private void ROLB() {
+        int carryIn = isFlagSet(C_FLAG) ? 1 : 0;
+        int newCarry = (B & 0x80) != 0 ? 1 : 0;
+        B = ((B << 1) | carryIn) & 0xFF;
+        if (newCarry == 1) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        clearFlag(V_FLAG);
+        updateZNFlags8(B);
+    }
+
+    private void RORA() {
+        int carryIn = isFlagSet(C_FLAG) ? 0x80 : 0;
+        int newCarry = A & 0x01;
+        A = ((A >> 1) | carryIn) & 0xFF;
+        if (newCarry != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        clearFlag(V_FLAG);
+        updateZNFlags8(A);
+    }
+    private void RORB() {
+        int carryIn = isFlagSet(C_FLAG) ? 0x80 : 0;
+        int newCarry = B & 0x01;
+        B = ((B >> 1) | carryIn) & 0xFF;
+        if (newCarry != 0) setFlag(C_FLAG); else clearFlag(C_FLAG);
+        clearFlag(V_FLAG);
+        updateZNFlags8(B);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     //BRANCHE AND JUMP
        // Fetch a signed byte for relative addressing (branches).
        // Converts 8-bit signed value to signed int.
@@ -1283,6 +2170,201 @@ public class CPU {
 
 
 
+
+
+
+
+
+    // ============================================================================
+    // PART 7: STACK AND MISCELLANEOUS INSTRUCTIONS
+    // ============================================================================
+
+    // --- PSHS: Push Registers onto System Stack (S) ---
+    // Uses your existing helpers pushWord/pushByte for cleaner code
+    private void pshs() {
+        int postbyte = fetchByte();
+
+        // Order: PC, U, Y, X, DP, B, A, CC
+        if ((postbyte & 0x80) != 0) pushWord(PC);
+        if ((postbyte & 0x40) != 0) pushWord(U);
+        if ((postbyte & 0x20) != 0) pushWord(Y);
+        if ((postbyte & 0x10) != 0) pushWord(X);
+        if ((postbyte & 0x08) != 0) pushByte(DP);
+        if ((postbyte & 0x04) != 0) pushByte(B);
+        if ((postbyte & 0x02) != 0) pushByte(A);
+        if ((postbyte & 0x01) != 0) pushByte(CC);
+    }
+
+    // --- PSHU: Push Registers onto User Stack (U) ---
+    // Uses her exact manual logic because you don't have 'pushUserWord' helpers
+    private void pshu() {
+        int postbyte = fetchByte();
+
+        // Order: PC, S, Y, X, DP, B, A, CC
+        if ((postbyte & 0x80) != 0) { // PC
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, PC & 0xFF);       // Low
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, (PC >> 8) & 0xFF); // High
+        }
+        if ((postbyte & 0x40) != 0) { // S
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, S & 0xFF);
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, (S >> 8) & 0xFF);
+        }
+        if ((postbyte & 0x20) != 0) { // Y
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, Y & 0xFF);
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, (Y >> 8) & 0xFF);
+        }
+        if ((postbyte & 0x10) != 0) { // X
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, X & 0xFF);
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, (X >> 8) & 0xFF);
+        }
+        if ((postbyte & 0x08) != 0) { // DP
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, DP);
+        }
+        if ((postbyte & 0x04) != 0) { // B
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, B);
+        }
+        if ((postbyte & 0x02) != 0) { // A
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, A);
+        }
+        if ((postbyte & 0x01) != 0) { // CC
+            U = (U - 1) & 0xFFFF; ram.WriteInMemory(U, CC);
+        }
+    }
+
+    // --- PULS: Pull Registers from System Stack (S) ---
+    // Uses your existing pullByte/pullWord helpers
+    private void puls() {
+        int postbyte = fetchByte();
+
+        // Order: CC, A, B, DP, X, Y, U, PC
+        if ((postbyte & 0x01) != 0) CC = pullByte();
+        if ((postbyte & 0x02) != 0) A = pullByte();
+        if ((postbyte & 0x04) != 0) B = pullByte();
+        if ((postbyte & 0x08) != 0) DP = pullByte();
+        if ((postbyte & 0x10) != 0) X = pullWord();
+        if ((postbyte & 0x20) != 0) Y = pullWord();
+        if ((postbyte & 0x40) != 0) U = pullWord();
+        if ((postbyte & 0x80) != 0) PC = pullWord();
+    }
+
+    // --- PULU: Pull Registers from User Stack (U) ---
+    // Uses her exact manual logic
+    private void pulu() {
+        int postbyte = fetchByte();
+
+        // Order: CC, A, B, DP, X, Y, S, PC
+        if ((postbyte & 0x01) != 0) { CC = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF; }
+        if ((postbyte & 0x02) != 0) { A = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF; }
+        if ((postbyte & 0x04) != 0) { B = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF; }
+        if ((postbyte & 0x08) != 0) { DP = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF; }
+        if ((postbyte & 0x10) != 0) { // X
+            int high = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF;
+            int low = ram.ReadFromMemory(U);  U = (U + 1) & 0xFFFF;
+            X = (high << 8) | low;
+        }
+        if ((postbyte & 0x20) != 0) { // Y
+            int high = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF;
+            int low = ram.ReadFromMemory(U);  U = (U + 1) & 0xFFFF;
+            Y = (high << 8) | low;
+        }
+        if ((postbyte & 0x40) != 0) { // S
+            int high = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF;
+            int low = ram.ReadFromMemory(U);  U = (U + 1) & 0xFFFF;
+            S = (high << 8) | low;
+        }
+        if ((postbyte & 0x80) != 0) { // PC
+            int high = ram.ReadFromMemory(U); U = (U + 1) & 0xFFFF;
+            int low = ram.ReadFromMemory(U);  U = (U + 1) & 0xFFFF;
+            PC = (high << 8) | low;
+        }
+    }
+
+    // --- TFR: Transfer Register ---
+    private void tfr() {
+        int byteVal = fetchByte();
+        int src = (byteVal >> 4) & 0x0F;
+        int dest = byteVal & 0x0F;
+        int val = getRegisterInternal(src);
+        setRegisterInternal(dest, val);
+    }
+
+    // --- EXG: Exchange Register ---
+    private void exg() {
+        int byteVal = fetchByte();
+        int r1 = (byteVal >> 4) & 0x0F;
+        int r2 = byteVal & 0x0F;
+        int val1 = getRegisterInternal(r1);
+        int val2 = getRegisterInternal(r2);
+        setRegisterInternal(r1, val2);
+        setRegisterInternal(r2, val1);
+    }
+
+    // --- Helper for TFR/EXG (Replaces String decoding) ---
+    private int getRegisterInternal(int code) {
+        switch(code) {
+            case 0: return getD();
+            case 1: return X;
+            case 2: return Y;
+            case 3: return U;
+            case 4: return S;
+            case 5: return PC;
+            case 8: return A;
+            case 9: return B;
+            case 10: return CC;
+            case 11: return DP;
+            default: return 0;
+        }
+    }
+
+    // --- Helper for TFR/EXG ---
+    private void setRegisterInternal(int code, int val) {
+        switch(code) {
+            case 0: setD(val); break;
+            case 1: X = val & 0xFFFF; break;
+            case 2: Y = val & 0xFFFF; break;
+            case 3: U = val & 0xFFFF; break;
+            case 4: S = val & 0xFFFF; break;
+            case 5: PC = val & 0xFFFF; break;
+            case 8: A = val & 0xFF; break;
+            case 9: B = val & 0xFF; break;
+            case 10: CC = val & 0xFF; break;
+            case 11: DP = val & 0xFF; break;
+        }
+    }
+
+    // --- Miscellaneous ---
+    private void nop() { /* Do nothing */ }
+
+    private void clrc() {
+        clearFlag(C_FLAG);
+    }
+
+    private void sec() {
+        setFlag(C_FLAG);
+    }
+
+    // --- Interrupts ---
+    private void swi() {
+        // PSHS all registers
+        pushWord(PC); pushWord(U); pushWord(Y); pushWord(X);
+        pushByte(DP); pushByte(B); pushByte(A); pushByte(CC);
+        // Set Interrupt Mask flags
+        setFlag(I_FLAG);
+        setFlag(F_FLAG);
+        // Jump to vector
+        PC = ram.ReadWord(0xFFFA);
+    }
+
+    private void rti() {
+        // PULS all registers (opposite of SWI)
+        CC = pullByte(); A = pullByte(); B = pullByte(); DP = pullByte();
+        X = pullWord(); Y = pullWord(); U = pullWord(); PC = pullWord();
+    }
+
+
+
+
+
     // function that print all the registers i mean get
     public void printAllRegisters() {
         System.out.printf("PC: %04X  D: %04X (A:%02X B:%02X)  X: %04X  Y: %04X  U: %04X  S: %04X  DP: %02X\n",
@@ -1311,6 +2393,34 @@ public class CPU {
         // 3. Decode and execute the opcode
         // This switch statement calls all your hard work.
         switch (opcode) {
+
+
+// ================= 8-bit LOAD =================
+//LDA
+            case 0x86: LDA_IMM(); break;
+            case 0x96: LDA_DIR(); break;
+            case 0xB6: LDA_EXT(); break;
+            case 0xA6: LDA_IND(); break; // FIXED: 0 instead of O
+
+//LDB
+            case 0xC6: LDB_IMM(); break;
+            case 0xD6: LDB_DIR(); break;
+            case 0xF6: LDB_EXT(); break;
+            case 0xE6: LDB_IND(); break;
+
+// STA
+            case 0x97: STA_DIR(); break;
+            case 0xB7: STA_EXT(); break;
+            case 0xA7: STA_IND(); break; // FIXED: 0 instead of OX
+
+//STB
+            case 0xD7: STB_DIR(); break;
+            case 0xF7: STB_EXT(); break;
+            case 0xE7: STB_IND(); break;
+
+
+
+
             // --- 16-bit LOAD/STORE ( Part 2) ---
             case 0xCC:
                 ldd_immediate();
@@ -1402,6 +2512,75 @@ public class CPU {
             case 0x10EE: lds_indexed(); break;
             case 0x10EF: sts_indexed(); break;
 
+
+
+            // ================= 8-bit Arithmetic =================
+            case 0x8B: ADDA_IMM(); break;
+            case 0x9B: ADDA_DIR(); break;
+            case 0xBB: ADDA_EXT(); break;
+            case 0xAB: ADDA_IND(); break;
+
+            case 0xCB: ADDB_IMM(); break;
+            case 0xDB: ADDB_DIR(); break;
+            case 0xFB: ADDB_EXT(); break;
+            case 0xEB: ADDB_IND(); break;
+
+            case 0x89: ADCA_IMM(); break;
+            case 0x99: ADCA_DIR(); break;
+            case 0xB9: ADCA_EXT(); break;
+            case 0xA9: ADCA_IND(); break;
+
+            case 0xC9: ADCB_IMM(); break;
+            case 0xD9: ADCB_DIR(); break;
+            case 0xF9: ADCB_EXT(); break;
+            case 0xE9: ADCB_IND(); break;
+
+            case 0x80: SUBA_IMM(); break;
+            case 0x90: SUBA_DIR(); break;
+            case 0xB0: SUBA_EXT(); break;
+            case 0xA0: SUBA_IND(); break;
+
+            case 0xC0: SUBB_IMM(); break;
+            case 0xD0: SUBB_DIR(); break;
+            case 0xF0: SUBB_EXT(); break;
+            case 0xE0: SUBB_IND(); break;
+
+            case 0x82: SBCA_IMM(); break;
+            case 0x92: SBCA_DIR(); break;
+            case 0xB2: SBCA_EXT(); break;
+            case 0xA2: SBCA_IND(); break;
+
+            case 0xC2: SBCB_IMM(); break;
+            case 0xD2: SBCB_DIR(); break;
+            case 0xF2: SBCB_EXT(); break;
+            case 0xE2: SBCB_IND(); break;
+
+            case 0x81: CMPA_IMM(); break;
+            case 0x91: CMPA_DIR(); break;
+            case 0xB1: CMPA_EXT(); break;
+            case 0xA1: CMPA_IND(); break;
+
+            case 0xC1: CMPB_IMM(); break;
+            case 0xD1: CMPB_DIR(); break;
+            case 0xF1: CMPB_EXT(); break;
+            case 0xE1: CMPB_IND(); break;
+
+            // ================= INC / DEC =================
+            case 0x4C: INCA(); break;
+            case 0x5C: INCB(); break;
+            case 0x4A: DECA(); break;
+            case 0x5A: DECB(); break;
+
+            // ================= CLR / TST =================
+            case 0x4F: CLRA(); break;
+            case 0x5F: CLRB(); break;
+            case 0x4D: TSTA(); break;
+            case 0x5D: TSTB(); break;
+
+
+
+
+
             // --- 16-bit ARITHMETIC ( Part 4) ---
             case 0xC3:
                 addd_immediate();
@@ -1462,7 +2641,82 @@ public class CPU {
             case 0x11A3: cmpu_indexed(); break;
             case 0x11AC: cmps_indexed(); break;
 
-            // ... (add INX, DECX, etc. opcodes here) ...
+
+
+
+// ================= Logic =================
+            case 0x84: ANDA_IMM(); break;
+            case 0x94: ANDA_DIR(); break; // Fixed: Was 0x85 (Wrong)
+            case 0xB4: ANDA_EXT(); break; // Fixed: Was 0x86 (Duplicate/Wrong)
+            case 0xA4: ANDA_IND(); break; // Fixed: Was 0x87 (Wrong)
+
+            case 0xC4: ANDB_IMM(); break;
+            case 0xD4: ANDB_DIR(); break; // Fixed: Was 0xC5
+            case 0xF4: ANDB_EXT(); break; // Fixed: Was 0xC6
+            case 0xE4: ANDB_IND(); break; // Fixed: Was 0xC7
+
+            case 0x8A: ORA_IMM(); break;
+            case 0x9A: ORA_DIR(); break;
+            case 0xBA: ORA_EXT(); break;
+            case 0xAA: ORA_IND(); break;
+
+// Missing ORB cases were likely here, adding them to be safe:
+            case 0xCA: ORB_IMM(); break;
+            case 0xDA: ORB_DIR(); break;
+            case 0xFA: ORB_EXT(); break;
+            case 0xEA: ORB_IND(); break;
+
+            case 0x88: EORA_IMM(); break;
+            case 0x98: EORA_DIR(); break;
+            case 0xB8: EORA_EXT(); break;
+            case 0xA8: EORA_IND(); break; // Fixed: Was 0x8F (Typo)
+
+            case 0xC8: EORB_IMM(); break;
+            case 0xD8: EORB_DIR(); break;
+            case 0xF8: EORB_EXT(); break;
+            case 0xE8: EORB_IND(); break;
+
+            case 0x43: COMA(); break;
+            case 0x53: COMB(); break;
+            case 0x40: NEGA(); break;
+            case 0x50: NEGB(); break;
+
+
+            // ================= Shift =================
+            case 0x48:
+                ASLA();
+                break;
+            case 0x58:
+                ASLB();
+                break;
+            case 0x47:
+                ASRA();
+                break;
+            case 0x57:
+                ASRB();
+                break;
+            case 0x44:
+                LSRA();
+                break;
+            case 0x54:
+                LSRB();
+                break;
+            case 0x49:
+                ROLA();
+                break;
+            case 0x59:
+                ROLB();
+                break;
+            case 0x46:
+                RORA();
+                break;
+            case 0x56:
+                RORB();
+                break;
+
+
+
+
 
             // --- BRANCH/JUMP ( Part 6) ---
             case 0x20:
@@ -1541,6 +2795,35 @@ public class CPU {
             case 0x39:
                 rts();
                 break;
+
+
+
+            // =================================================
+            // PART 7: STACK AND MISCELLANEOUS
+            // =================================================
+
+            // --- Push / Pull Instructions ---
+            case 0x34: pshs(); break; // Push System Stack
+            case 0x36: pshu(); break; // Push User Stack
+            case 0x35: puls(); break; // Pull System Stack
+            case 0x37: pulu(); break; // Pull User Stack
+
+            // --- Transfer / Exchange ---
+            case 0x1F: tfr(); break;  // Transfer Register
+            case 0x1E: exg(); break;  // Exchange Register
+
+            // --- Flags & Misc ---
+            case 0x12: nop(); break;  // No Operation
+            case 0x0C: clrc(); break; // Clear Carry Flag (Project specific opcode)
+            case 0x0D: sec(); break;  // Set Carry Flag (Project specific opcode)
+
+            // --- Interrupts ---
+            case 0x3F: swi(); break;  // Software Interrupt
+            case 0x3B: rti(); break;  // Return from Interrupt
+
+
+
+
             default:
                 // We need to 'undo' the fetchByte if we don't know the opcode
                 PC = (PC - 1) & 0xFFFF;
