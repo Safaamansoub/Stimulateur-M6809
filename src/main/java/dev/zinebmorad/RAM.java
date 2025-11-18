@@ -9,7 +9,7 @@ public class RAM {
         this.memory = new byte[memory_size] ;
     }
 
-    
+
     //methodes
     //for reading
     public int ReadFromMemory(int address){
@@ -21,20 +21,6 @@ public class RAM {
     }
 
 
-    //fro writing
-    public void WriteInMemory(int address, int value){
-        //test for the validation of the adress
-        if (address <0 || address >= memory_size ){
-            throw new IndexOutOfBoundsException("Adress memory invalid : " + address) ;
-        }
-        //verification of the value
-        if(value < 0 || value >255) {
-            throw new IllegalArgumentException("Value should be on (0-255) : "+ value);
-        }
-        //entering the value as a information
-        this.memory[address] =(byte) value ;
-
-    }
     //for writing
     public void WriteInMemory(int address, int value){
         //test for the validation of the adress
