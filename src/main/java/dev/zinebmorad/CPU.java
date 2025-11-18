@@ -40,19 +40,9 @@ public class CPU {
     // ETAPE 2 : THE FUNCTIONS HELPERS :
     //  Fct for reseting all the values of the registers to 0
     public void reset (){
-        A = 0 ;
-        B = 0 ;
-        X = 0 ;
-        Y = 0 ;
-        U = 0 ;
-        S = 0 ;
-        DP = 0 ;
-        CC = 0 ;
+            A = 0; B = 0; X = 0; Y = 0; U = 0; S = 0; DP = 0; CC = 0;
+            PC = 0x0000; // Simple reset for simulation purposes
 
-        // For the counter
-        // this needs to be with the ram but first we need the constructor for the ram created there
-        PC = ram.ReadWord(0xFFFE);
-        //for the 16-bit adress goes from FFFE ( HIGHT BYTE) and FFFF (low byte )
     }
 
     // constructor :
@@ -62,6 +52,7 @@ public class CPU {
     }
 
     // functions for print all the values of all the registres
+
     public int getA(){
         return A;
     }
@@ -2907,6 +2898,26 @@ public class CPU {
 
 
 
+// ==========================================
+    //  SETTERS FOR GUI INTERACTION
+    // ==========================================
+
+    // 8-Bit Registers (Mask with 0xFF to ensure they stay 8-bit)
+    public void setA(int val) { this.A = val & 0xFF; }
+    public void setB(int val) { this.B = val & 0xFF; }
+    public void setCC(int val) { this.CC = val & 0xFF; }
+    public void setDP(int val) { this.DP = val & 0xFF; }
+
+    // 16-Bit Registers (Mask with 0xFFFF to ensure they stay 16-bit)
+    public void setX(int val) { this.X = val & 0xFFFF; }
+    public void setY(int val) { this.Y = val & 0xFFFF; }
+    public void setU(int val) { this.U = val & 0xFFFF; }
+    public void setS(int val) { this.S = val & 0xFFFF; }
+
+    // PC
+    public void setPC(int address) {
+        this.PC = address & 0xFFFF;
+    }
 
 
 
