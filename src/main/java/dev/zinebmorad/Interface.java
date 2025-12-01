@@ -140,7 +140,7 @@ public class Interface extends JFrame {
         // 1. The Text Area (Where you type 86 55 A6 ...)
         JTextArea codeArea = new JTextArea();
         codeArea.setFont(new Font("Monospaced", Font.PLAIN, 14)); // Use fixed-width font
-        codeArea.setToolTipText("Enter Hex Bytes separated by spaces (e.g. '86 55 4F')");
+        codeArea.setToolTipText("Enter programme (ex : LDA #$05)");
         JScrollPane scrollPane = new JScrollPane(codeArea);
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -173,39 +173,33 @@ public class Interface extends JFrame {
                 String rawCode = codeArea.getText();
                 if (rawCode.isEmpty()) return;
 
-                // 3. Split by whitespace (space, enter, tab)
-                String[] tokens = rawCode.split("\\s+");
-
+                // 3. convert from assmebly to hex
+                java.util.List<Integer> machineCode;
+                try{
+                    machineCode = Assembleur.assemble(rawCode);
+                } catch (Exception asmError){
+                    String[] tokens = rawCode.split("\\s+");
+                    machineCode = new java.util.ArrayList<>();
+                    for (String t : tokens){
+                        if (!t.isEmpty()) machineCode.add(Integer.parseInt(t,16));
+                    }
+                }
                 int currentAddr = startAddr;
                 int count = 0;
 
-                // 4. Loop through every byte and write to RAM
-                for (String token : tokens) {
-                    if (token.isEmpty()) continue;
-                    // Parse Hex Byte
-                    int value = Integer.parseInt(token, 16);
-
-                    // Safety check: Byte must be 00-FF
-                    if (value < 0 || value > 255) {
-                        throw new NumberFormatException("Value out of byte range: " + token);
-                    }
-
-                    // Write to Backend
-                    ram.WriteInMemory(currentAddr, value);
-
+                // 4. write to backend
+                for (int val : machineCode){
+                    ram.WriteInMemory(currentAddr,val);
                     currentAddr++;
                     count++;
                 }
 
+
                 JOptionPane.showMessageDialog(this,
                         "Successfully loaded " + count + " bytes at $" + addrStr.toUpperCase());
 
-                // Optional: Update PC to match start address automatically?
-                // Let's just leave it manual for now.
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Error: Invalid Hex. " + ex.getMessage(), "Load Error", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error writing to RAM: " + ex.getMessage(), "Load Error", JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -314,7 +308,17 @@ public class Interface extends JFrame {
             btnRun.setText("RUN");
             btnRun.setBackground(null); // Ensure color resets on reset
             cpu.reset();
+            oldPC = cpu.getPC();
+            oldA = cpu.getA();
+            oldB = cpu.getB();
+            oldX = cpu.getX();
+            oldY = cpu.getY();
+            oldU = cpu.getU();
+            oldS = cpu.getS();
+            oldDP = cpu.getDP();
+            oldCC = cpu.getCC();
             updateGUI();
+
         });
 
         buttonPanel.add(btnStep);
